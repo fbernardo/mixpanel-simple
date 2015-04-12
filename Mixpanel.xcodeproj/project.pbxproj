@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		D027143C1A19D0480002DF28 /* MPTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = D027143B1A19D0480002DF28 /* MPTracker.m */; };
+		D03DD2761AD79911006D87F5 /* WatchKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D03DD2751AD79911006D87F5 /* WatchKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		D04225A81A1D897A0021C331 /* MPFlushOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = D04225A71A1D897A0021C331 /* MPFlushOperation.m */; };
 		D05353231A1E7E8B00304A9A /* MPUtilitiesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D05353221A1E7E8B00304A9A /* MPUtilitiesTests.m */; };
 		D05353241A1E7E8B00304A9A /* MPUtilitiesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D05353221A1E7E8B00304A9A /* MPUtilitiesTests.m */; };
@@ -74,6 +75,7 @@
 /* Begin PBXFileReference section */
 		D027143A1A19D0480002DF28 /* MPTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTracker.h; sourceTree = "<group>"; };
 		D027143B1A19D0480002DF28 /* MPTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTracker.m; sourceTree = "<group>"; };
+		D03DD2751AD79911006D87F5 /* WatchKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.3.sdk/System/Library/Frameworks/WatchKit.framework; sourceTree = DEVELOPER_DIR; };
 		D04225A61A1D897A0021C331 /* MPFlushOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPFlushOperation.h; sourceTree = "<group>"; };
 		D04225A71A1D897A0021C331 /* MPFlushOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPFlushOperation.m; sourceTree = "<group>"; };
 		D05353221A1E7E8B00304A9A /* MPUtilitiesTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUtilitiesTests.m; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D03DD2761AD79911006D87F5 /* WatchKit.framework in Frameworks */,
 				D0FB1B9E1A1DC3770031DE23 /* UIKit.framework in Frameworks */,
 				D0FB1B8A1A1DA1110031DE23 /* libresolv.dylib in Frameworks */,
 				D0FB1B881A1DA10B0031DE23 /* CoreTelephony.framework in Frameworks */,
@@ -206,6 +209,7 @@
 		D0FB1B8B1A1DA11D0031DE23 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D03DD2751AD79911006D87F5 /* WatchKit.framework */,
 				D0F938BD1A1ED2A000ABA994 /* UIKit.framework */,
 				D0FB1B8C1A1DA17D0031DE23 /* libresolv.dylib */,
 				D0FB1B891A1DA1110031DE23 /* libresolv.dylib */,

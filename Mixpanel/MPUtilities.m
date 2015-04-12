@@ -12,6 +12,9 @@
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80200
+#import <WatchKit/WatchKit.h>
+#endif
 #elif defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
 #import <AppKit/AppKit.h>
 #endif
@@ -112,6 +115,15 @@ NSDictionary *MPDeviceProperties() {
     [networkInfo release];
 
     CGSize size = [[UIScreen mainScreen] bounds].size;
+    
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80200
+    if ([[[[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSExtension"] objectForKey:@"NSExtensionPointIdentifier"] isEqualToString:@"com.apple.watchkit"]) {
+        WKInterfaceDevice *watchDevice = [WKInterfaceDevice currentDevice];
+        if (watchDevice)
+            size = [watchDevice screenBounds].size;
+    }
+#endif
+    
     NSNumber *width = [NSNumber numberWithInteger:(NSInteger)MIN(size.width, size.height)];
     NSNumber *height = [NSNumber numberWithInteger:(NSInteger)MAX(size.width, size.height)];
 
