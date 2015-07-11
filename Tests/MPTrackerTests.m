@@ -31,9 +31,9 @@
 
 - (void)testInvalidInitialization {
     XCTAssertNil([[MPTracker alloc] initWithToken:@"abc123" cacheURL:[NSURL fileURLWithPath:@"/mixpanel/somefile"]]);
-    XCTAssertThrowsSpecificNamed([[MPTracker alloc] initWithToken:nil cacheURL:[NSURL fileURLWithPath:@"/mixpanel/somefile"]], NSException, NSInternalInconsistencyException);
-    XCTAssertThrowsSpecificNamed([[MPTracker alloc] initWithToken:@"abc123" cacheURL:nil], NSException, NSInternalInconsistencyException);
-    XCTAssertThrowsSpecificNamed([[MPTracker alloc] init], NSException, NSInternalInconsistencyException);
+    XCTAssertNil([[MPTracker alloc] initWithToken:nil cacheURL:[NSURL fileURLWithPath:@"/mixpanel/somefile"]]);
+    XCTAssertNil([[MPTracker alloc] initWithToken:@"abc123" cacheURL:nil]);
+    XCTAssertNil([[MPTracker alloc] init]);
 }
 
 @end

@@ -12,4 +12,4 @@ extern id MPJSONSerializableObject(id object);
 
 extern NSDictionary *MPAutomaticProperties();
 
-extern NSURLRequest *MPURLRequestForEvents(NSArray *events);
+extern NSURLRequest *MPURLRequestForEventData(NSData *data);

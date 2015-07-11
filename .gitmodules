@@ -1,3 +1,0 @@
-[submodule "PrefixedJSONKit"]
-	path = JSONKit
-	url = https://github.com/conradev/PrefixedJSONKit.git

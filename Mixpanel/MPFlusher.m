@@ -9,38 +9,30 @@
 #import "MPFlusher.h"
 #import "MPFlushOperation.h"
 
-@implementation MPFlusher
-
-@synthesize cacheDirectory=_cacheDirectory;
+@implementation MPFlusher {
+    NSTimer *_flushTimer;
+    NSOperationQueue *_flushOperationQueue;
+}
 
 - (instancetype)init {
     return [self initWithCacheDirectory:nil];
 }
 
 - (instancetype)initWithCacheDirectory:(NSURL *)cacheDirectory {
-    NSParameterAssert(cacheDirectory);
     self = [super init];
     if (self) {
         BOOL directory = NO;
         if (![[NSFileManager defaultManager] fileExistsAtPath:cacheDirectory.path isDirectory:&directory] || !directory) {
             NSLog(@"%@: Invalid cache directory provided", self);
-            [self release];
             return nil;
         }
 
         _cacheDirectory = [cacheDirectory copy];
         _flushOperationQueue = [NSOperationQueue new];
+        
         [self setFlushInterval:15.0f];
     }
     return self;
-}
-
-- (void)dealloc {
-    [_cacheDirectory release];
-    [_flushOperationQueue release];
-    [_flushTimer invalidate];
-    [_flushTimer release];
-    [super dealloc];
 }
 
 - (NSTimeInterval)flushInterval {
@@ -49,24 +41,27 @@
 
 - (void)setFlushInterval:(NSTimeInterval)flushInterval {
     [_flushTimer invalidate];
-    [_flushTimer release];
     NSTimer *flushTimer = [NSTimer timerWithTimeInterval:flushInterval target:self selector:@selector(flush) userInfo:nil repeats:YES];
     [[NSRunLoop currentRunLoop] addTimer:flushTimer forMode:NSRunLoopCommonModes];
-    _flushTimer = [flushTimer retain];
+    _flushTimer = flushTimer;
     [_flushTimer fire];
 }
 
 - (void)flush {
     NSSet *queuedURLs = [NSSet setWithArray:[_flushOperationQueue.operations valueForKey:NSStringFromSelector(@selector(cacheURL))]];
-    NSDirectoryEnumerator *cacheEnumerator = [[NSFileManager defaultManager] enumeratorAtURL:_cacheDirectory includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^BOOL(NSURL *url, NSError *error) {
+    NSDirectoryEnumerator *cacheEnumerator = [[NSFileManager defaultManager] enumeratorAtURL:_cacheDirectory includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *url, NSError *error) {
         return YES;
     }];
-    for (NSURL *cacheURL in cacheEnumerator) {
+    
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"path ENDSWITH '.json'"];
+    for (__strong NSURL *cacheURL in cacheEnumerator) {
         cacheURL = [cacheURL URLByResolvingSymlinksInPath];
-        if (![queuedURLs containsObject:cacheURL]) {
-            MPFlushOperation *operation = [[MPFlushOperation alloc] initWithCacheURL:cacheURL];
-            [_flushOperationQueue addOperation:operation];
-            [operation release];
+        if ([predicate evaluateWithObject:cacheURL]) {
+            if (![queuedURLs containsObject:cacheURL]) {
+                MPFlushOperation *operation = [[MPFlushOperation alloc] initWithCacheURL:cacheURL];
+                operation.name = [NSString stringWithFormat:@"%@-%@", NSStringFromClass([self class]), [NSDate date]];
+                [_flushOperationQueue addOperation:operation];
+            }
         }
     }
 }

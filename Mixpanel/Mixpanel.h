@@ -10,11 +10,7 @@
 
 @class MPTracker, MPFlusher;
 
-@interface Mixpanel : NSObject {
-    @private
-    MPTracker *_tracker;
-    MPFlusher *_flusher;
-}
+@interface Mixpanel : NSObject
 
 @property (nonatomic, readonly, retain) MPTracker *tracker;
 @property (nonatomic, readonly, retain) MPFlusher *flusher;

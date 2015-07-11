@@ -8,24 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-@interface MPTracker : NSObject {
-    @private
-    NSString *_token;
-    NSString *_distinctId;
-    NSDictionary *_defaultProperties;
-    NSArray *_eventQueue;
-    NSOperationQueue *_eventOperationQueue;
-    NSOperationQueue *_flushOperationQueue;
-    NSURL *_presentedItemURL;
-    NSOperationQueue *_presentedItemOperationQueue;
-    NSDate *_lastModificationDate;
-    NSNumber *_lastFileSize;
-}
+@interface MPTracker : NSObject
 
-@property (nonatomic, readonly, retain) NSString *token;
-@property (nonatomic, readonly, retain) NSString *distinctId;
-@property (nonatomic, readonly, retain) NSURL *cacheURL;
-@property (nonatomic, readonly, retain) NSOperationQueue *operationQueue;
+@property (nonatomic, readonly, copy) NSString *token;
+@property (nonatomic, readonly, copy) NSString *distinctId;
+@property (nonatomic, readonly, copy) NSURL *cacheURL;
 @property (nonatomic, copy) NSDictionary *defaultProperties;
 
 - (instancetype)initWithToken:(NSString *)token cacheURL:(NSURL *)cacheURL NS_DESIGNATED_INITIALIZER;
@@ -35,9 +22,6 @@
 
 - (void)createAlias:(NSString *)alias forDistinctID:(NSString *)distinctID;
 - (void)identify:(NSString *)distinctId;
-
-- (void)startPresenting;
-- (void)stopPresenting;
 
 - (void)flush:(void(^)())completion;
 

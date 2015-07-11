@@ -12,7 +12,9 @@
 
 extern NSString * const MPEventQueueKey;
 
-@implementation MPFlushOperation
+@implementation MPFlushOperation {
+    NSFileHandle *_handle;
+}
 
 @synthesize cacheURL=_cacheURL;
 
@@ -24,66 +26,99 @@ extern NSString * const MPEventQueueKey;
     NSParameterAssert(cacheURL);
     self = [super init];
     if (self) {
-        if (![[NSFileManager defaultManager] fileExistsAtPath:cacheURL.path]) {
-            NSLog(@"%@: Invalid cache file", self);
-            [self release];
+        NSError *error = nil;
+        _handle = [NSFileHandle fileHandleForUpdatingURL:cacheURL error:&error];
+        if (!_handle) {
+            NSLog(@"%@: Error: %@", self, error.localizedDescription);
             return nil;
         }
-
+        
         _cacheURL = [cacheURL copy];
     }
     return self;
 }
 
-- (void)dealloc {
-    [_cacheURL release];
-    [_coordinator cancel];
-    [_coordinator release];
-    [super dealloc];
-}
-
 - (void)main {
-    _coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-    [_coordinator coordinateWritingItemAtURL:_cacheURL options:NSFileCoordinatorWritingForMerging error:nil byAccessor:^(NSURL *newURL) {
-        NSMutableDictionary *state = [NSMutableDictionary dictionaryWithContentsOfURL:newURL];
-        if (!state)
-            return;
-
-        NSMutableArray *eventQueue = [NSMutableArray arrayWithArray:[state objectForKey:MPEventQueueKey]];
-        NSUInteger length = MIN(eventQueue.count, 50);
-        if (!length)
-            return;
-
-        NSRange batchRange = NSMakeRange(0, length);
-        NSArray *batch = [eventQueue subarrayWithRange:batchRange];
-        NSURLRequest *request = MPURLRequestForEvents(batch);
-        if (!request)
-            return;
-
+    if (flock(_handle.fileDescriptor, LOCK_EX) == -1) {
+        NSLog(@"%@: Error: Could not lock file descriptor", self);
+        return;
+    }
+    
+    FILE *file;
+    if ((file = fopen(_cacheURL.fileSystemRepresentation, "r")) == NULL) {
+        NSLog(@"%@: Error: Could not open file descriptor", self);
+        if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
+            NSLog(@"%@: Error: Could unlock file descriptor", self);
+        return;
+    }
+    
+    char start = '[';
+    char delim = ',';
+    char end = ']';
+    
+    NSMutableData *body = [NSMutableData new];
+    [body appendBytes:&start length:1];
+    
+    int line = 0;
+    ssize_t length = -1;
+    size_t n = 1024;
+    char *lineptr = malloc(length);
+    off_t offset = 0;
+    while ((length = getline(&lineptr, &n, file)) > 0 && line < 50) {
+        offset += length;
+        
         NSError *error = nil;
-        NSHTTPURLResponse *response = nil;
-        NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-
-        NSIndexSet *acceptableCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
-        if (!error && [acceptableCodes containsIndex:response.statusCode]) {
-            if ([[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease] integerValue] != 1) {
-                NSLog(@"%@: Not all events accepted by server", self);
-            }
-            [eventQueue removeObjectsInRange:batchRange];
-        } else {
-            NSLog(@"%@: Error uploading events", self);
+        [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytesNoCopy:lineptr length:length freeWhenDone:NO] options:NSJSONReadingAllowFragments error:&error];
+        if (error) {
+            NSLog(@"%@: Error: Line is not valid JSON, skipping", self);
+            continue;
         }
+        [body appendBytes:lineptr length:(length - 1)];
+        [body appendBytes:&delim length:1];
+        line++;
+    }
+    
+    [body replaceBytesInRange:NSMakeRange(body.length - 1, 1) withBytes:&end length:1];
+    fclose(file);
+    
+    if (line == 0) {
+        if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
+            NSLog(@"%@: Error: Could unlock file descriptor", self);
+        return;
+    }
+    
+    NSURLRequest *request = MPURLRequestForEventData(body);
+    if (!request) {
+        NSLog(@"%@: Error: Failed to create request", self);
+        if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
+            NSLog(@"%@: Error: Could unlock file descriptor", self);
+        return;
+    }
 
-        [state setObject:eventQueue forKey:MPEventQueueKey];
-        [state writeToURL:newURL atomically:YES];
-    }];
-    [_coordinator release];
-    _coordinator = nil;
-}
+    NSError *error = nil;
+    NSHTTPURLResponse *response = nil;
+    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
 
-- (void)cancel {
-    [_coordinator cancel];
-    [super cancel];
+    NSIndexSet *acceptableCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
+    if (error || ![acceptableCodes containsIndex:response.statusCode]) {
+        NSLog(@"%@: Error: Request failed: %@", self, error.localizedDescription);
+        if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
+            NSLog(@"%@: Error: Could unlock file descriptor", self);
+        return;
+    }
+    
+    if ([[[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] integerValue] != 1) {
+        NSLog(@"%@: Error: Not all events accepted by server", self);
+    }
+    
+    [_handle seekToFileOffset:offset];
+    NSData *fileData = [_handle readDataToEndOfFile];
+    [_handle seekToFileOffset:0];
+    [_handle writeData:fileData];
+    [_handle truncateFileAtOffset:fileData.length];
+    
+    if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
+        NSLog(@"%@: Error: Could unlock file descriptor", self);
 }
 
 @end

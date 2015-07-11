@@ -18,7 +18,7 @@
 
 - (void)testInvalidInitialization {
     XCTAssertNil([[MPFlusher alloc] initWithCacheDirectory:[NSURL fileURLWithPath:@"/mixpanel/somefile"]]);
-    XCTAssertThrowsSpecificNamed([[MPFlusher alloc] initWithCacheDirectory:nil], NSException, NSInternalInconsistencyException);
+    XCTAssertNil([[MPFlusher alloc] initWithCacheDirectory:nil]);
 }
 
 @end

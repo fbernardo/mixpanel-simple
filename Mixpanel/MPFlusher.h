@@ -8,12 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface MPFlusher : NSObject {
-    @private
-    NSURL *_cacheDirectory;
-    NSOperationQueue *_flushOperationQueue;
-    NSTimer *_flushTimer;
-}
+@interface MPFlusher : NSObject
 
 @property (nonatomic) NSTimeInterval flushInterval;
 @property (nonatomic, readonly, retain) NSURL *cacheDirectory;

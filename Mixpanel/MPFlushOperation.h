@@ -8,11 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface MPFlushOperation : NSOperation {
-    @private
-    NSURL *_cacheURL;
-    NSFileCoordinator *_coordinator;
-}
+@interface MPFlushOperation : NSOperation
 
 @property (nonatomic, readonly, retain) NSURL *cacheURL;
 
