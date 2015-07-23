@@ -13,7 +13,7 @@
 @property (nonatomic, readonly, copy) NSString *token;
 @property (nonatomic, readonly, copy) NSString *distinctId;
 @property (nonatomic, readonly, copy) NSURL *cacheURL;
-@property (nonatomic, copy) NSDictionary *defaultProperties;
+@property (copy) NSDictionary *defaultProperties;
 
 - (instancetype)initWithToken:(NSString *)token cacheURL:(NSURL *)cacheURL NS_DESIGNATED_INITIALIZER;
 

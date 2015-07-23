@@ -17,6 +17,7 @@
 @implementation MPTracker {
     NSFileHandle *_handle;
     NSArray *_events;
+    NSLock *_distinctLock;
     NSOperationQueue *_flushOperationQueue;
 }
 
@@ -60,6 +61,7 @@
         _token = token;
         _cacheURL = cacheURL;
         _events = [NSArray new];
+        _distinctLock = [NSLock new];
         _handle = [[NSFileHandle alloc] initWithFileDescriptor:fd closeOnDealloc:YES];
     }
     return self;
@@ -70,6 +72,7 @@
 }
 
 - (NSString *)distinctId {
+    [_distinctLock lock];
     if (!_distinctId) {
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
         UIDevice *device = [UIDevice currentDevice];
@@ -80,7 +83,10 @@
         IOObjectRelease(ioRegistryRoot);
 #endif
     }
-    return _distinctId;
+    NSString *distinctId = _distinctId;
+    [_distinctLock unlock];
+
+    return distinctId;
 }
 
 - (void)track:(NSString *)event {
@@ -97,9 +103,9 @@
     [mergedProperties setValue:timestamp forKey:@"time"];
 
     dispatch_async([[self class] queue], ^{
-        [mergedProperties addEntriesFromDictionary:_defaultProperties];
+        [mergedProperties addEntriesFromDictionary:self.defaultProperties];
+        [mergedProperties setValue:self.distinctId forKey:@"distinct_id"];
         [mergedProperties setValue:_token forKey:@"token"];
-        [mergedProperties setValue:_distinctId forKey:@"distinct_id"];
         
         NSDictionary *eventDictionary = MPJSONSerializableObject([NSDictionary dictionaryWithObjectsAndKeys:event, @"event", mergedProperties, @"properties", nil]);
         _events = [_events arrayByAddingObject:eventDictionary];
@@ -145,7 +151,9 @@
 
 - (void)identify:(NSString *)distinctId {
     dispatch_async([[self class] queue], ^{
+        [_distinctLock lock];
         _distinctId = distinctId;
+        [_distinctLock unlock];
     });
 }
 
