@@ -84,8 +84,19 @@ extern NSURLRequest *MPURLRequestForEventData(NSData *data) {
         encodedData = [[NSString alloc] initWithBytesNoCopy:buffer length:(actual + 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
     }
 
-    NSString *encodedData = [[NSString alloc] initWithBytesNoCopy:buffer length:(actual + 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
-    NSString *escapedData = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (CFStringRef)encodedData, NULL, CFSTR("!*'();:@&=+$,/?%#[]"), kCFStringEncodingUTF8));
+    NSString *escapedData = nil;
+    NSString *charactersToEscape = @"!*'();:@&=+$,/?%#[]";
+    if ([encodedData respondsToSelector:@selector(stringByAddingPercentEncodingWithAllowedCharacters:)]) {
+        NSMutableCharacterSet *characterSet = [[NSCharacterSet URLQueryAllowedCharacterSet] mutableCopy];
+        [characterSet removeCharactersInString:charactersToEscape];
+        escapedData = [encodedData stringByAddingPercentEncodingWithAllowedCharacters:characterSet];
+    } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        escapedData = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (CFStringRef)encodedData, NULL, (__bridge CFStringRef)charactersToEscape, kCFStringEncodingUTF8));
+#pragma clang diagnostic pop
+    }
+    
     NSData *body = [[NSString stringWithFormat:@"ip=1&data=%@", escapedData] dataUsingEncoding:NSUTF8StringEncoding];
 
     NSURL *baseURL = [NSURL URLWithString:MPBaseURLString];
