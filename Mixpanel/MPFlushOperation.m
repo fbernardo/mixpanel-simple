@@ -95,10 +95,25 @@ extern NSString * const MPEventQueueKey;
         return;
     }
 
-    NSError *error = nil;
-    NSHTTPURLResponse *response = nil;
-    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-
+    __block NSError *error = nil;
+    __block NSHTTPURLResponse *response = nil;
+    __block NSData *responseData = nil;
+    
+    if ([NSURLSession class]) {
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+        [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *sessionData, NSURLResponse *sessionResponse, NSError *sessionError) {
+            responseData = sessionData;
+            response = (NSHTTPURLResponse *)sessionResponse;
+            error = sessionError;
+            dispatch_semaphore_signal(semaphore);
+        }] resume];
+        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
+#ifndef __WATCH_OS_VERSION_MIN_REQUIRED
+    } else {
+        responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+#endif
+    }
+    
     NSIndexSet *acceptableCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
     if (error || ![acceptableCodes containsIndex:response.statusCode]) {
         NSLog(@"%@: Error: Request failed: %@", self, error.localizedDescription);
