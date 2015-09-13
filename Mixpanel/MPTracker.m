@@ -10,7 +10,7 @@
 #import "MPUtilities.h"
 #import "MPFlushOperation.h"
 
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
+#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && !defined(__WATCH_OS_VERSION_MIN_REQUIRED)
 #import <UIKit/UIKit.h>
 #endif
 
@@ -28,7 +28,9 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         dispatch_queue_attr_t attr = DISPATCH_QUEUE_SERIAL;
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < 80000
         if (dispatch_queue_attr_make_with_qos_class)
+#endif
             attr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_BACKGROUND, QOS_MIN_RELATIVE_PRIORITY + 5);
         queue = dispatch_queue_create("com.mixpanel.mixpanel.tracker", attr);
     });
@@ -74,7 +76,7 @@
 - (NSString *)distinctId {
     [_distinctLock lock];
     if (!_distinctId) {
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
+#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && !defined(__WATCH_OS_VERSION_MIN_REQUIRED)
         UIDevice *device = [UIDevice currentDevice];
         _distinctId = ([device respondsToSelector:@selector(identifierForVendor)] ? [device.identifierForVendor UUIDString] : nil);
 #elif defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
@@ -103,19 +105,35 @@
     [mergedProperties setValue:timestamp forKey:@"time"];
 
     dispatch_async([[self class] queue], ^{
+        NSString *distinctId = self.distinctId;
         [mergedProperties addEntriesFromDictionary:self.defaultProperties];
-        [mergedProperties setValue:self.distinctId forKey:@"distinct_id"];
+        [mergedProperties setValue:distinctId forKey:@"distinct_id"];
         [mergedProperties setValue:_token forKey:@"token"];
         
         NSDictionary *eventDictionary = MPJSONSerializableObject([NSDictionary dictionaryWithObjectsAndKeys:event, @"event", mergedProperties, @"properties", nil]);
         _events = [_events arrayByAddingObject:eventDictionary];
+        
+        if (!distinctId) {
+            NSLog(@"%@: Error: Could not save events to disk without a distinctId", self);
+            return;
+        }
         
         if (flock(_handle.fileDescriptor, LOCK_EX) == -1) {
             NSLog(@"%@: Error: Could not lock file descriptor", self);
             return;
         }
                 
-        for (NSDictionary *event in _events) {
+        for (__strong NSDictionary *event in _events) {
+            NSDictionary *properties = [event objectForKey:@"properties"];
+            
+            if (![properties objectForKey:@"distinct_id"]) {
+                NSMutableDictionary *mutableEvent = [event mutableCopy];
+                NSMutableDictionary *mutableProperties = [properties mutableCopy];
+                [mutableProperties setObject:distinctId forKey:@"distinct_id"];
+                [mutableEvent setObject:mutableProperties forKey:@"distinct_id"];
+                event = mutableEvent;
+            }
+            
             NSError *error = nil;
             char endline = '\n';
             NSMutableData *data = [[NSJSONSerialization dataWithJSONObject:event options:0 error:&error] mutableCopy];

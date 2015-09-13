@@ -9,10 +9,12 @@
 #import <Foundation/Foundation.h>
 
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
+#ifndef __WATCH_OS_VERSION_MIN_REQUIRED
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80200
+#endif
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80200 || defined(__WATCH_OS_VERSION_MIN_REQUIRED)
 #import <WatchKit/WatchKit.h>
 #endif
 #elif defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
@@ -118,21 +120,35 @@ NSDictionary *MPDeviceProperties() {
     sysctl(mib, 2, buffer, &length, NULL, 0);
     NSString *model = [[NSString alloc] initWithBytesNoCopy:buffer length:(length - 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
     
+    NSString *systemName = nil;
+    NSString *systemVersion = nil;
+    CGSize size = CGSizeZero;
+    NSString *carrier = nil;
+    
+#ifndef __WATCH_OS_VERSION_MIN_REQUIRED
     UIDevice *device = [UIDevice currentDevice];
+    systemName = [device systemName];
+    systemVersion = [device systemVersion];
+    
+    size = [[UIScreen mainScreen] bounds].size;
 
     CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
-    NSString *carrier = [[networkInfo subscriberCellularProvider] carrierName];
-
-    CGSize size = [[UIScreen mainScreen] bounds].size;
+    carrier = [[networkInfo subscriberCellularProvider] carrierName];
     
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80200
     if ([[[[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSExtension"] objectForKey:@"NSExtensionPointIdentifier"] isEqualToString:@"com.apple.watchkit"]) {
         WKInterfaceDevice *watchDevice = [WKInterfaceDevice currentDevice];
-        if (watchDevice)
-            size = [watchDevice screenBounds].size;
+        size = watchDevice.screenBounds.size;
     }
 #endif
+#else
+    WKInterfaceDevice *device = [WKInterfaceDevice currentDevice];
+    systemName = device.systemName;
+    systemVersion = device.systemVersion;
     
+    size = device.screenBounds.size;
+#endif
+
     NSNumber *width = [NSNumber numberWithInteger:(NSInteger)MIN(size.width, size.height)];
     NSNumber *height = [NSNumber numberWithInteger:(NSInteger)MAX(size.width, size.height)];
 
@@ -140,8 +156,8 @@ NSDictionary *MPDeviceProperties() {
     [properties setValue:@"Apple" forKey:@"$manufacturer"];
     [properties setValue:carrier forKey:@"$carrier"];
     [properties setValue:model forKey:@"$model"];
-    [properties setValue:[device systemName] forKey:@"$os"];
-    [properties setValue:[device systemVersion] forKey:@"$os_version"];
+    [properties setValue:systemName forKey:@"$os"];
+    [properties setValue:systemVersion forKey:@"$os_version"];
     [properties setValue:width forKey:@"$screen_width"];
     [properties setValue:height forKey:@"$screen_height"];
 
