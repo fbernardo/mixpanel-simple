@@ -111,12 +111,13 @@ extern NSURLRequest *MPURLRequestForEventData(NSData *data) {
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
 
 NSDictionary *MPDeviceProperties() {
-    size_t length;
-    sysctlbyname("hw.machine", NULL, &length, NULL, 0);
+    size_t length = 0;
+    int mib[2] = {CTL_HW, HW_MACHINE};
+    sysctl(mib, 2, NULL, &length, NULL, 0);
     char *buffer = malloc(length);
-    sysctlbyname("hw.machine", buffer, &length, NULL, 0);
+    sysctl(mib, 2, buffer, &length, NULL, 0);
     NSString *model = [[NSString alloc] initWithBytesNoCopy:buffer length:(length - 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
-
+    
     UIDevice *device = [UIDevice currentDevice];
 
     CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
@@ -150,10 +151,11 @@ NSDictionary *MPDeviceProperties() {
 #elif defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
 
 NSDictionary *MPDeviceProperties() {
-    size_t length;
-    sysctlbyname("hw.model", NULL, &length, NULL, 0);
+    size_t length = 0;
+    int mib[2] = {CTL_HW, HW_MODEL};
+    sysctl(mib, 2, NULL, &length, NULL, 0);
     char *buffer = malloc(length);
-    sysctlbyname("hw.model", buffer, &length, NULL, 0);
+    sysctl(mib, 2, buffer, &length, NULL, 0);
     NSString *model = [[NSString alloc] initWithBytesNoCopy:buffer length:(length - 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
     
     SInt32 major, minor, bugfix;
