@@ -68,12 +68,20 @@ id MPJSONSerializableObject(id object) {
 }
 
 extern NSURLRequest *MPURLRequestForEventData(NSData *data) {
-    NSUInteger encodedLength = ((data.length + 2) / 3) * 4 + 1;
-    char *buffer = malloc(encodedLength);
-    int actual = b64_ntop(data.bytes, data.length, buffer, encodedLength);
-    if (!actual) {
-        free(buffer);
-        return nil;
+    NSString *encodedData = nil;
+    
+    if ([data respondsToSelector:@selector(base64EncodedStringWithOptions:)]) {
+        encodedData = [data base64EncodedStringWithOptions:0];
+    } else {
+        NSUInteger encodedLength = ((data.length + 2) / 3) * 4 + 1;
+        char *buffer = malloc(encodedLength);
+        int actual = b64_ntop(data.bytes, data.length, buffer, encodedLength);
+        if (!actual) {
+            free(buffer);
+            return nil;
+        }
+        
+        encodedData = [[NSString alloc] initWithBytesNoCopy:buffer length:(actual + 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
     }
 
     NSString *encodedData = [[NSString alloc] initWithBytesNoCopy:buffer length:(actual + 1) encoding:NSUTF8StringEncoding freeWhenDone:YES];
