@@ -59,7 +59,8 @@
         if ([predicate evaluateWithObject:cacheURL]) {
             if (![queuedURLs containsObject:cacheURL]) {
                 MPFlushOperation *operation = [[MPFlushOperation alloc] initWithCacheURL:cacheURL];
-                operation.name = [NSString stringWithFormat:@"%@-%@", NSStringFromClass([self class]), [NSDate date]];
+                if ([operation respondsToSelector:@selector(setName:)])
+                    operation.name = [NSString stringWithFormat:@"%@-%@", NSStringFromClass([self class]), [NSDate date]];
                 [_flushOperationQueue addOperation:operation];
             }
         }
