@@ -61,7 +61,7 @@ extern NSString * const MPEventQueueKey;
     [_task cancel];
     if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
         NSLog(@"%@: Error: Could not unlock file descriptor", self);
-#if DEBUG
+#if MIXPANEL_INFO_LOG
     NSLog(@"%@: Cancelling flush operation", self);
 #endif
     self.finished = YES;
@@ -118,7 +118,7 @@ extern NSString * const MPEventQueueKey;
         fclose(file);
         
         if (line == 0 || self.cancelled) {
-#if DEBUG
+#if MIXPANEL_INFO_LOG
             NSLog(@"%@: No events to upload", self);
 #endif
             if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
@@ -175,7 +175,7 @@ extern NSString * const MPEventQueueKey;
         
         if (flock(_handle.fileDescriptor, LOCK_UN) == -1)
             NSLog(@"%@: Error: Could unlock file descriptor", self);
-#if DEBUG
+#if MIXPANEL_INFO_LOG
         NSLog(@"%@: Successfully uploaded %i events", self, line + 1);
 #endif
     };
