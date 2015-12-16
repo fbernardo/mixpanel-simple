@@ -8,3 +8,8 @@ This is a version of Mixpanel's [iOS SDK](https://github.com/mixpanel/mixpanel-i
 - Works on iOS 5 and OS X 10.7 and above
 - Only tracks events
 - Does not use `UIApplication`
+
+## License
+
+`mixpanel-simple` is available under the MIT license. See the LICENSE file for more info.
+
