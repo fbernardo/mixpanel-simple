@@ -8,7 +8,9 @@
 
 #import <Foundation/Foundation.h>
 
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
+#if defined(__TV_OS_VERSION_MIN_REQUIRED)
+#import <UIKit/UIKit.h>
+#elif defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
 #ifndef __WATCH_OS_VERSION_MIN_REQUIRED
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
@@ -132,6 +134,7 @@ NSDictionary *MPDeviceProperties() {
     
     size = [[UIScreen mainScreen] bounds].size;
 
+#ifndef __TV_OS_VERSION_MIN_REQUIRED
     CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
     carrier = [[networkInfo subscriberCellularProvider] carrierName];
     
@@ -140,6 +143,7 @@ NSDictionary *MPDeviceProperties() {
         WKInterfaceDevice *watchDevice = [WKInterfaceDevice currentDevice];
         size = watchDevice.screenBounds.size;
     }
+#endif
 #endif
 #else
     WKInterfaceDevice *device = [WKInterfaceDevice currentDevice];
